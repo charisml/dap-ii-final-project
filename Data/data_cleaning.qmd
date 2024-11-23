@@ -1,0 +1,3 @@
+# Remove unnecessary columns 
+# Save the first 1000 rows of each dataset to csv 
+# upload to GitHub repo
