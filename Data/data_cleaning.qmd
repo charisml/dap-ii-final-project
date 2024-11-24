@@ -1,3 +1,68 @@
-# Remove unnecessary columns 
-# Save the first 1000 rows of each dataset to csv 
-# upload to GitHub repo
+Clean and Save Data Files to Repo
+
+```{python}
+    import pandas as pd
+    import os
+    import csv
+    import warnings
+    warnings.filterwarnings("ignore")
+
+    # load data 
+    base_path = r"/Users/charismalambert/Downloads"
+  
+    vehicles_path = os.path.join(base_path, "traffic_crashes_vehicles.csv")
+    vehicles_df = pd.read_csv(vehicles_path)
+
+    crashes_path = os.path.join(base_path, "traffic_crashes_crashes.csv")
+    crashes_df = pd.read_csv(crashes_path)
+
+    people_path = os.path.join(base_path, "traffic_crashes_people.csv")
+    people_df = pd.read_csv(people_path)
+```
+
+
+```{python}
+    # Keep certain columns 
+    vehicles_updated_df = vehicles_df[["CRASH_RECORD_ID", "CRASH_DATE"]]
+
+    # drop na 
+    vehicles_updated_df = vehicles_updated_df.dropna()
+
+    # keep 10000 rows of data
+    vehicles_cleaned = vehicles_updated_df[:10000]
+    
+    # write vehicles cleaned to csv to be used for the remainder of project
+    vehicles_cleaned.to_csv("vehicles_crash_instances.csv", index = False)
+```
+
+
+```{python}
+    # Keep certain columns 
+    crashes_updated_df = crashes_df[["CRASH_RECORD_ID", "CRASH_DATE", "WEATHER_CONDITION", "LIGHTING_CONDITION", "ROADWAY_SURFACE_COND", "REPORT_TYPE", "DATE_POLICE_NOTIFIED", "LATITUDE", "LONGITUDE", "LOCATION"]]
+
+    # drop na 
+    crashes_updated_df = crashes_updated_df.dropna()
+
+    # keep 10000 rows of data
+    crashes_cleaned = crashes_updated_df[:10000]
+    
+    # write crashes cleaned to csv to be used for the remainder of project
+    crashes_cleaned.to_csv("crashes_crash_instances.csv", index = False)
+```
+
+
+```{python}
+    # Keep certain columns 
+    people_updated_df = people_df[["CRASH_RECORD_ID", "CRASH_DATE", "VEHICLE_ID","PERSON_TYPE"]]
+
+    # drop na 
+    people_updated_df = people_updated_df.dropna()
+
+    # keep 10000 rows of data
+    people_cleaned = people_updated_df[:10000]
+    
+    # write crashes cleaned to csv to be used for the remainder of project
+    people_cleaned.to_csv("people_crash_instances.csv", index = False)
+```
+
+
