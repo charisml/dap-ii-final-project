@@ -22,6 +22,7 @@
 ```
 
 
+# Vehicles 
 ```{python}
     # Keep certain columns 
     vehicles_updated_df = vehicles_df[["CRASH_RECORD_ID", "CRASH_DATE"]]
@@ -30,16 +31,23 @@
     vehicles_updated_df = vehicles_updated_df.dropna()
 
     # add accident type
-    vehicles_updated_df["Crash_Type"] = "V"
+    vehicles_updated_df["CRASH_TYPE"] = "V"
+
+    # convert CRASH_DATE to datetime format and create new columns
+    vehicles_updated_df["CRASH_DATE"] = pd.to_datetime(vehicles_updated_df["CRASH_DATE"])
+    vehicles_updated_df["CRASH_MONTH"] = vehicles_updated_df["CRASH_DATE"].dt.month
+    vehicles_updated_df["CRASH_YEAR"] = vehicles_updated_df["CRASH_DATE"].dt.year
+    vehicles_updated_df["CRASH_TIME"] = vehicles_updated_df["CRASH_DATE"].dt.time
 
     # keep 10000 rows of data
     vehicles_cleaned = vehicles_updated_df[:10000]
-    
-    # write vehicles cleaned to csv to be used for the remainder of project
+    vehicles_cleaned
+
+    # write vehicles cleaned to csv 
     vehicles_cleaned.to_csv("vehicles_crash_instances.csv", index = False)
 ```
 
-
+# Crashes
 ```{python}
     # Keep certain columns 
     crashes_updated_df = crashes_df[["CRASH_RECORD_ID", "CRASH_DATE", "WEATHER_CONDITION", "LIGHTING_CONDITION", "ROADWAY_SURFACE_COND", "REPORT_TYPE", "DATE_POLICE_NOTIFIED", "LATITUDE", "LONGITUDE", "LOCATION"]]
@@ -48,29 +56,62 @@
     crashes_updated_df = crashes_updated_df.dropna()
 
     # add accident type
-    crashes_updated_df["Crash_Type"] = "C"
+    crashes_updated_df["CRASH_TYPE"] = "C"
+
+    # convert CRASH_DATE to datetime format and create new columns
+    crashes_updated_df["CRASH_DATE"] = pd.to_datetime(crashes_updated_df["CRASH_DATE"])
+    crashes_updated_df["CRASH_MONTH"] = crashes_updated_df["CRASH_DATE"].dt.month
+    crashes_updated_df["CRASH_YEAR"] = crashes_updated_df["CRASH_DATE"].dt.year
+    crashes_updated_df["CRASH_TIME"] = crashes_updated_df["CRASH_DATE"].dt.time
 
     # keep 10000 rows of data
     crashes_cleaned = crashes_updated_df[:10000]
-    
-    # write crashes cleaned to csv to be used for the remainder of project
+    crashes_cleaned
+
+    # write crashes cleaned to csv 
     crashes_cleaned.to_csv("crashes_crash_instances.csv", index = False)
 ```
 
 
+# People
 ```{python}
     # Keep certain columns 
-    people_updated_df = people_df[["CRASH_RECORD_ID", "CRASH_DATE", "VEHICLE_ID","PERSON_TYPE"]]
+    people_updated_df = people_df[["CRASH_RECORD_ID", "CRASH_DATE", "VEHICLE_ID","PERSON_TYPE", "ZIPCODE"]]
 
     # drop na 
     people_updated_df = people_updated_df.dropna()
 
     # add accident type
-    people_updated_df["Crash_Type"] = "P"
+    people_updated_df["CRASH_TYPE"] = "P"
+
+    # convert CRASH_DATE to datetime format and create new columns
+    people_updated_df["CRASH_DATE"] = pd.to_datetime(people_updated_df["CRASH_DATE"])
+    people_updated_df["CRASH_MONTH"] = people_updated_df["CRASH_DATE"].dt.month
+    people_updated_df["CRASH_YEAR"] = people_updated_df["CRASH_DATE"].dt.year
+    people_updated_df["CRASH_TIME"] = people_updated_df["CRASH_DATE"].dt.time
 
     # keep 10000 rows of data
     people_cleaned = people_updated_df[:10000]
-    
-    # write crashes cleaned to csv to be used for the remainder of project
+    people_cleaned
+
+    # write crashes cleaned to csv 
     people_cleaned.to_csv("people_crash_instances.csv", index = False)
+```
+
+# Merge, Clean Final DF
+```{python}
+# combine dataframes
+combined_crash_df = pd.concat([people_cleaned, crashes_cleaned, vehicles_cleaned])
+
+# sort by year 
+combined_crash_df = combined_crash_df.sort_values(by = "CRASH_YEAR").reset_index(drop= True)
+#print(combined_crash_df)
+
+# keep 2023 and 2024 crash data 
+final_df = combined_crash_df[(combined_crash_df["CRASH_YEAR"] == 2023) | (combined_crash_df["CRASH_YEAR"] == 2024)]
+
+final_df = final_df[["CRASH_RECORD_ID", "CRASH_DATE", "CRASH_TYPE", "CRASH_MONTH", "CRASH_YEAR", "CRASH_TIME", "LATITUDE", "LONGITUDE", "LOCATION", "ZIPCODE"]]
+
+# write final_df to csv to be used for the remainder of project 
+final_df.to_csv("crash_by_type.csv", index = False)
 ```
