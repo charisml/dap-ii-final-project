@@ -29,6 +29,9 @@
     # drop na 
     vehicles_updated_df = vehicles_updated_df.dropna()
 
+    # add accident type
+    vehicles_updated_df["Crash_Type"] = "V"
+
     # keep 10000 rows of data
     vehicles_cleaned = vehicles_updated_df[:10000]
     
@@ -44,6 +47,9 @@
     # drop na 
     crashes_updated_df = crashes_updated_df.dropna()
 
+    # add accident type
+    crashes_updated_df["Crash_Type"] = "C"
+
     # keep 10000 rows of data
     crashes_cleaned = crashes_updated_df[:10000]
     
@@ -58,6 +64,9 @@
 
     # drop na 
     people_updated_df = people_updated_df.dropna()
+
+    # add accident type
+    people_updated_df["Crash_Type"] = "P"
 
     # keep 10000 rows of data
     people_cleaned = people_updated_df[:10000]
