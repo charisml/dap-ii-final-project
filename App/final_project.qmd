@@ -1,0 +1,31 @@
+
+
+```{python}
+    import pandas as pd
+    import os
+    import csv
+    import altair as alt
+    import numpy as np
+    import warnings
+    warnings.filterwarnings("ignore")
+```
+
+
+```{python}
+    base_path = r"/Users/charismalambert/Documents/GitHub/dap-ii-final-project/Data"
+  
+    vehicles_path = os.path.join(base_path, "vehicles_crash_instances.csv")
+    vehicles_df = pd.read_csv(vehicles_path)
+
+    crashes_path = os.path.join(base_path, "crashes_crash_instances.csv")
+    crashes_df = pd.read_csv(crashes_path)
+
+    people_path = os.path.join(base_path, "people_crash_instances.csv")
+    people_df = pd.read_csv(people_path)
+
+    crash_by_type_path = os.path.join(base_path, "crash_by_type.csv")
+    crash_by_type = pd.read_csv(crash_by_type_path)
+```
+
+```{python}
+```
