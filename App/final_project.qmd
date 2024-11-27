@@ -99,8 +99,26 @@ Remove observations where location data is unavailable
 crashes_location = crashes.dropna(subset=['LOCATION'])
 ```
 
-Create a basic map before starting the app
+Remove columns I won't use 
+```{python}
+crashes_location = crashes_location.drop(columns=['TRAFFIC_CONTROL_DEVICE', 
+'DEVICE_CONDITION','INTERSECTION_RELATED_I','NOT_RIGHT_OF_WAY_I','STREET_NO',
+'STREET_DIRECTION', 'STREET_NAME', 'BEAT_OF_OCCURRENCE',
+'PHOTOS_TAKEN_I', 'STATEMENTS_TAKEN_I','WORK_ZONE_I',
+'WORK_ZONE_TYPE', 'WORKERS_PRESENT_I'])
 
+people = people.drop(columns=['SEAT_NO', 'CITY', 'STATE', 'ZIPCODE',
+'DRIVERS_LICENSE_STATE', 'DRIVERS_LICENSE_CLASS', 'SAFETY_EQUIPMENT',
+'HOSPITAL','EMS_AGENCY', 'EMS_RUN_NO'])
+```
+
+Remove observations in people for which there is no corresponding 'crash_record_id' in crashes
+do this by merging people and crashes_location
+```{python}
+crashes_people = pd.merge(people, crashes_location, on='CRASH_RECORD_ID', how='inner')
+```
+
+Create a basic map before starting the app
 ```{python}
 import geopandas as gpd
 import pandas as pd
@@ -109,16 +127,16 @@ import matplotlib.pyplot as plt
 ```
 
 ```{python}
-# Convert location column to geoseries
-crashes_location['geometry'] = crashes_location['LOCATION'].apply(wkt.loads)
-crashes_gdf = gpd.GeoDataFrame(crashes_location, geometry='geometry')
+# # Convert location column to geoseries
+crashes_people['geometry'] = crashes_people['LOCATION'].apply(wkt.loads)
+crashes_gdf = gpd.GeoDataFrame(crashes_people, geometry='geometry')
 
-crashes_gdf.set_crs(epsg=4326, inplace=True) 
-crashes_gdf = crashes_gdf.to_crs(epsg=3435)  # Reproject to IL state plane
-
+# reset CRS to IL
+crashes_gdf.set_crs(epsg=4326, inplace=True)
+crashes_gdf = crashes_gdf.to_crs(epsg=3435)
 
 # Load the Chicago ward boundaries geojson
-ward_boundaries = gpd.read_file(os.path.join(raw_data_path,'ward_boundaries.geojson'))
+ward_boundaries = gpd.read_file(os.path.join(raw_data_path, 'ward_boundaries.geojson'))
 ward_boundaries = ward_boundaries.to_crs(epsg=3435)
 
 # Plot the ward boundaries and crash points
@@ -127,11 +145,17 @@ ward_boundaries.plot(ax=ax, color='lightgrey', edgecolor='black')
 crashes_gdf.plot(ax=ax, color='red', markersize=1, alpha=0.7)
 plt.show()
 
+```
 
+Dataset is still too big. keep only 2018-2023, and make year column
+
+```{python}
+crashes_gdf['YEAR'] = crashes_gdf['CRASH_DATE'].dt.year
+crashes_gdf = crashes_gdf[crashes_gdf['YEAR'] >= 2018 &
+crashes_gdf['YEAR'] <= 2023]
 ```
 
 Save data to csv for app
 ```{python}
 crashes_gdf.to_csv('crashes_gdf.csv', index=False)
-people.to_csv('people_app_df.csv', index=False)
 ```
