@@ -114,8 +114,26 @@ people = people.drop(columns=['SEAT_NO', 'CITY', 'STATE', 'ZIPCODE',
 
 Remove observations in people for which there is no corresponding 'crash_record_id' in crashes
 do this by merging people and crashes_location
+
+There are 161 observations where the dates for a given crash record ID do not match across the crashes and people datasets. If the mismatch in dates is greater than 7 days, I remove that observation from crashes_people
+
 ```{python}
 crashes_people = pd.merge(people, crashes_location, on='CRASH_RECORD_ID', how='inner')
+
+# Check merge worked by matching crash_date_x with crash_date_y
+crashes_people['check'] = crashes_people['CRASH_DATE_x'] == crashes_people['CRASH_DATE_y']
+crashes_people.shape[0] - crashes_people['check'].sum()
+
+# View observations where dates don't match 
+mismatched_observations = crashes_people[crashes_people['check'] == False]
+mismatched_observations['difference'] = mismatched_observations['CRASH_DATE_x'] - mismatched_observations['CRASH_DATE_y']
+mismatched_observations['difference']= mismatched_observations['difference'].dt.days
+
+# find any observations where the absolute value of the difference is greater than 7, identify those in the main dataset, and remove them
+mismatched_observations['difference'] = mismatched_observations['difference'].abs()
+mismatched_observations_over_7_days = mismatched_observations[mismatched_observations['difference'] > 7]
+
+crashes_people = crashes_people[~crashes_people['CRASH_RECORD_ID'].isin(mismatched_observations_over_7_days['CRASH_RECORD_ID'])]
 ```
 
 Create a basic map before starting the app
@@ -144,15 +162,18 @@ fig, ax = plt.subplots(figsize=(10, 10))
 ward_boundaries.plot(ax=ax, color='lightgrey', edgecolor='black')
 crashes_gdf.plot(ax=ax, color='red', markersize=1, alpha=0.7)
 plt.show()
-
 ```
 
-Dataset is still too big. keep only 2018-2023, and make year column
+Dataset is still too big. keep only 2020-2024, and make year column. And drop unnecessary columns. 
 
 ```{python}
+# Keep only crash_date_y (from crashes dataset)
+crashes_gdf = crashes_gdf.drop(columns=['CRASH_DATE_x'])
+crashes_gdf = crashes_gdf.rename(columns={'CRASH_DATE_y':'CRASH_DATE'})
+crashes_gdf = crashes_gdf.drop(columns=['check'])
+
 crashes_gdf['YEAR'] = crashes_gdf['CRASH_DATE'].dt.year
-crashes_gdf = crashes_gdf[crashes_gdf['YEAR'] >= 2018 &
-crashes_gdf['YEAR'] <= 2023]
+crashes_gdf = crashes_gdf[crashes_gdf['YEAR'] >= 2021]
 ```
 
 Save data to csv for app
