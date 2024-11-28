@@ -1,31 +1,177 @@
 
 
 ```{python}
-    import pandas as pd
-    import os
-    import csv
-    import altair as alt
-    import numpy as np
-    import warnings
-    warnings.filterwarnings("ignore")
+import pandas as pd
+import os
+import csv
+import altair as alt
+import numpy as np
+import warnings
+warnings.filterwarnings("ignore")
+```
+
+Read in raw data (so I can use all columns), and keep only 10,000 rows 
+
+```{python}
+#raw_data_path = r"C:\Users\User\OneDrive - The University of Chicago\4_DAP-2\Final Project Data"
+raw_data_path = r"/Users/charismalambert/Downloads" 
+
+crashes = pd.read_csv(os.path.join(raw_data_path, "traffic_crashes_crashes.csv"))
+vehicles = pd.read_csv(os.path.join(raw_data_path, "traffic_crashes_vehicles.csv"))
+people = pd.read_csv(os.path.join(raw_data_path, "traffic_crashes_people.csv"))
+```
+
+Keep data from 2016-present 
+```{python}
+dfs = [crashes, vehicles, people]
+
+# Convert the CRASH_DATE column to datetime and filter for 2016-present
+for i in range(len(dfs)):
+    dfs[i]['CRASH_DATE'] = pd.to_datetime(dfs[i]['CRASH_DATE'])
+    dfs[i] = dfs[i][dfs[i]['CRASH_DATE'].dt.year >= 2016]
+    dfs[i]['YEAR'] = dfs[i]['CRASH_DATE'].dt.year
+
 ```
 
 
 ```{python}
-    base_path = r"/Users/charismalambert/Documents/GitHub/dap-ii-final-project/Data"
-  
-    vehicles_path = os.path.join(base_path, "vehicles_crash_instances.csv")
-    vehicles_df = pd.read_csv(vehicles_path)
+# Function to count distinct CRASH_RECORD_ID per year
+def count_distinct_crash_record_id(df):
+    return df.groupby('YEAR')['CRASH_RECORD_ID'].nunique()
+# Print distinct counts per year for each DataFrame
+for i, df in enumerate(dfs, 1):
+    print(f"DataFrame {i} distinct counts per year:\n", count_distinct_crash_record_id(df), "\n")
+```
 
-    crashes_path = os.path.join(base_path, "crashes_crash_instances.csv")
-    crashes_df = pd.read_csv(crashes_path)
+Remove observations where location data is unavailable 
+```{python}
+crashes_location = crashes.dropna(subset=['LOCATION'])
+```
 
-    people_path = os.path.join(base_path, "people_crash_instances.csv")
-    people_df = pd.read_csv(people_path)
+Remove columns I won't use 
+```{python}
+crashes_location = crashes_location.drop(columns=['TRAFFIC_CONTROL_DEVICE', 
+'DEVICE_CONDITION','INTERSECTION_RELATED_I','NOT_RIGHT_OF_WAY_I','STREET_NO',
+'STREET_DIRECTION', 'STREET_NAME', 'BEAT_OF_OCCURRENCE',
+'PHOTOS_TAKEN_I', 'STATEMENTS_TAKEN_I','WORK_ZONE_I',
+'WORK_ZONE_TYPE', 'WORKERS_PRESENT_I'])
 
-    crash_by_type_path = os.path.join(base_path, "crash_by_type.csv")
-    crash_by_type = pd.read_csv(crash_by_type_path)
+people = people.drop(columns=['SEAT_NO', 'CITY', 'STATE', 'ZIPCODE',
+'DRIVERS_LICENSE_STATE', 'DRIVERS_LICENSE_CLASS', 'SAFETY_EQUIPMENT',
+'HOSPITAL','EMS_AGENCY', 'EMS_RUN_NO'])
+```
+
+Remove observations in people for which there is no corresponding 'crash_record_id' in crashes
+do this by merging people and crashes_location
+
+There are 161 observations where the dates for a given crash record ID do not match across the crashes and people datasets. If the mismatch in dates is greater than 7 days, I remove that observation from crashes_people
+
+```{python}
+crashes_people = pd.merge(people, crashes_location, on='CRASH_RECORD_ID', how='inner')
+
+# Check merge worked by matching crash_date_x with crash_date_y
+crashes_people['check'] = crashes_people['CRASH_DATE_x'] == crashes_people['CRASH_DATE_y']
+crashes_people.shape[0] - crashes_people['check'].sum()
+
+# View observations where dates don't match 
+mismatched_observations = crashes_people[crashes_people['check'] == False]
+mismatched_observations['difference'] = mismatched_observations['CRASH_DATE_x'] - mismatched_observations['CRASH_DATE_y']
+mismatched_observations['difference']= mismatched_observations['difference'].dt.days
+
+# find any observations where the absolute value of the difference is greater than 7, identify those in the main dataset, and remove them
+mismatched_observations['difference'] = mismatched_observations['difference'].abs()
+mismatched_observations_over_7_days = mismatched_observations[mismatched_observations['difference'] > 7]
+
+crashes_people = crashes_people[~crashes_people['CRASH_RECORD_ID'].isin(mismatched_observations_over_7_days['CRASH_RECORD_ID'])]
+```
+
+Dataset is still too big. keep only 2020-2024, and make year column. And drop unnecessary columns. 
+
+```{python}
+# Keep only crash_date_y (from crashes dataset)
+crashes_gdf = crashes_gdf.drop(columns=['CRASH_DATE_x'])
+crashes_gdf = crashes_gdf.rename(columns={'CRASH_DATE_y':'CRASH_DATE'})
+crashes_gdf = crashes_gdf.drop(columns=['check'])
+
+crashes_gdf['YEAR'] = crashes_gdf['CRASH_DATE'].dt.year
+crashes_gdf = crashes_gdf[crashes_gdf['YEAR'] >= 2021]
+```
+
+Create smaller dfs for each year 
+```{python}
+crashes_2021 = crashes_gdf[(crashes_gdf["CRASH_DATE"] >= "2021-01-01") & (crashes_gdf["CRASH_DATE"] <= "2021-12-31")]
+crashes_2022 = crashes_gdf[(crashes_gdf["CRASH_DATE"] >= "2022-01-01") & (crashes_gdf["CRASH_DATE"] <= "2022-12-31")]
+crashes_2023 = crashes_gdf[(crashes_gdf["CRASH_DATE"] >= "2023-01-01") & (crashes_gdf["CRASH_DATE"] <= "2023-12-31")]
+crashes_2024 = crashes_gdf[(crashes_gdf["CRASH_DATE"] >= "2024-01-01") & (crashes_gdf["CRASH_DATE"] <= "2024-06-30")]
+```
+
+Create a basic map before starting the app
+```{python}
+import geopandas as gpd
+import pandas as pd
+from shapely import wkt
+import matplotlib.pyplot as plt
 ```
 
 ```{python}
+# # Convert location column to geoseries
+crashes_people['geometry'] = crashes_people['LOCATION'].apply(wkt.loads)
+crashes_gdf = gpd.GeoDataFrame(crashes_people, geometry='geometry')
+
+# reset CRS to IL
+crashes_gdf.set_crs(epsg=4326, inplace=True)
+crashes_gdf = crashes_gdf.to_crs(epsg=3435)
+
+# Load the Chicago ward boundaries geojson
+ward_boundaries = gpd.read_file(os.path.join(raw_data_path, 'ward_boundaries.geojson'))
+ward_boundaries = ward_boundaries.to_crs(epsg=3435)
+```
+
+```{python}
+# Plot the ward boundaries and 2021 crash points
+fig, ax = plt.subplots(figsize=(10, 10))
+ward_boundaries.plot(ax=ax, color='lightgrey', edgecolor='black')
+crashes_2021.plot(ax=ax, color='yellow', markersize=1, alpha=0.7)
+plt.show()
+```
+
+```{python}
+# Plot the ward boundaries and 2022 crash points
+fig, ax = plt.subplots(figsize=(10, 10))
+ward_boundaries.plot(ax=ax, color='lightgrey', edgecolor='black')
+crashes_2022.plot(ax=ax, color='purple', markersize=1, alpha=0.7)
+plt.show()
+```
+
+
+```{python}
+# Plot the ward boundaries and 2023 crash points
+fig, ax = plt.subplots(figsize=(10, 10))
+ward_boundaries.plot(ax=ax, color='lightgrey', edgecolor='black')
+crashes_2023.plot(ax=ax, color='blue', markersize=1, alpha=0.7)
+plt.show()
+```
+
+
+```{python}
+# Plot the ward boundaries and 2024 crash points
+fig, ax = plt.subplots(figsize=(10, 10))
+ward_boundaries.plot(ax=ax, color='lightgrey', edgecolor='black')
+crashes_2024.plot(ax=ax, color='red', markersize=1, alpha=0.7)
+plt.show()
+```
+
+```{python}
+# Plot the ward boundaries and 2024 crash points
+fig, ax = plt.subplots(figsize=(10, 10))
+ward_boundaries.plot(ax=ax, color='lightgrey', edgecolor='black')
+crashes_gdf.plot(ax=ax, color='green', markersize=1, alpha=0.7)
+plt.show()
+```
+
+
+
+Save data to csv for app
+```{python}
+crashes_gdf.to_csv('crashes_gdf.csv', index=False)
 ```
