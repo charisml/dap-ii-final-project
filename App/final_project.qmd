@@ -10,25 +10,7 @@ import warnings
 warnings.filterwarnings("ignore")
 ```
 
-
-```{python}
-base_path = r"/Users/charismalambert/Documents/GitHub/dap-ii-final-project/Data"
-#base_path = r"C:\Users\User\Documents\GitHub\dap-ii-final-project\Data"
-
-vehicles_path = os.path.join(base_path, "vehicles_crash_instances.csv")
-vehicles_df = pd.read_csv(vehicles_path)
-
-crashes_path = os.path.join(base_path, "crashes_crash_instances.csv")
-crashes_df = pd.read_csv(crashes_path)
-
-people_path = os.path.join(base_path, "people_crash_instances.csv")
-people_df = pd.read_csv(people_path)
-
-crash_by_type_path = os.path.join(base_path, "crash_by_type.csv")
-crash_by_type = pd.read_csv(crash_by_type_path)
-```
-
-Read in raw data (so I can use all columns), and keep only 10,000 rows 
+Read in raw data, and keep only 10,000 rows 
 
 ```{python}
 #raw_data_path = r"C:\Users\User\OneDrive - The University of Chicago\4_DAP-2\Final Project Data"
@@ -69,7 +51,7 @@ Note for Charisma: The problem with taking only the first 10,000 rows is that we
 ```{python}
 crashes = pd.read_csv(os.path.join(raw_data_path, "traffic_crashes_crashes.csv"))
 vehicles = pd.read_csv(os.path.join(raw_data_path, "traffic_crashes_vehicles.csv"))
-people = pd.read_csv(os.path.join(raw_data_path, "traffic_crashes_people.csv"))
+people = pd.read_csv(os.path.join(raw_data_path, "traffic_crashes_people.csv")) 
 ```
 
 Keep data from 2016-present 
@@ -102,14 +84,14 @@ crashes_location = crashes.dropna(subset=['LOCATION'])
 Remove columns I won't use 
 ```{python}
 crashes_location = crashes_location.drop(columns=['TRAFFIC_CONTROL_DEVICE', 
-'DEVICE_CONDITION','INTERSECTION_RELATED_I','NOT_RIGHT_OF_WAY_I','STREET_NO',
-'STREET_DIRECTION', 'STREET_NAME', 'BEAT_OF_OCCURRENCE',
-'PHOTOS_TAKEN_I', 'STATEMENTS_TAKEN_I','WORK_ZONE_I',
-'WORK_ZONE_TYPE', 'WORKERS_PRESENT_I'])
+'DEVICE_CONDITION','INTERSECTION_RELATED_I','NOT_RIGHT_OF_WAY_I', 'BEAT_OF_OCCURRENCE',
+'PHOTOS_TAKEN_I', 'STATEMENTS_TAKEN_I','WORK_ZONE_I', 'WORK_ZONE_TYPE', 
+'WORKERS_PRESENT_I', 'LANE_CNT', 'ALIGNMENT'])
 
 people = people.drop(columns=['SEAT_NO', 'CITY', 'STATE', 'ZIPCODE',
 'DRIVERS_LICENSE_STATE', 'DRIVERS_LICENSE_CLASS', 'SAFETY_EQUIPMENT',
-'HOSPITAL','EMS_AGENCY', 'EMS_RUN_NO'])
+'HOSPITAL','EMS_AGENCY', 'EMS_RUN_NO', 'BAC_RESULT', 'BAC_RESULT VALUE',
+'CELL_PHONE_USE'])
 ```
 
 Remove observations in people for which there is no corresponding 'crash_record_id' in crashes
@@ -173,10 +155,22 @@ crashes_gdf = crashes_gdf.rename(columns={'CRASH_DATE_y':'CRASH_DATE'})
 crashes_gdf = crashes_gdf.drop(columns=['check'])
 
 crashes_gdf['YEAR'] = crashes_gdf['CRASH_DATE'].dt.year
-crashes_gdf = crashes_gdf[crashes_gdf['YEAR'] >= 2021]
+crashes_gdf = crashes_gdf[crashes_gdf['YEAR'] >= 2020]
 ```
 
 Save data to csv for app
 ```{python}
 crashes_gdf.to_csv('crashes_gdf.csv', index=False)
+```
+
+Create a new dataset to run app - 1,000 random samples from each year
+```{python}
+crashes_gdf_sample = crashes_gdf.groupby('YEAR').sample(n=1000, random_state=1)
+
+# Combine address to single column and drop 
+crashes_gdf_sample['ADDRESS'] = crashes_gdf['STREET_NO'].astype(str) + " " + crashes_gdf['STREET_DIRECTION'] + " " + crashes_gdf['STREET_NAME']
+crashes_gdf_sample = crashes_gdf_sample.drop(columns=['STREET_NO', 'STREET_DIRECTION',
+'STREET_NAME'])
+
+crashes_gdf_sample.to_csv('crashes_gdf_sample.csv', index=False)
 ```

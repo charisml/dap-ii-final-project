@@ -182,3 +182,8 @@ app = shiny.App(app_ui, server, static_assets=www_dir)
 
 ```
 
+When I finally got my main app code to work, I noticed that it was producing and saving an HTML file, but that file was blank. However, the UI components of the app were present. I tested the code again with only 1000 samples, and everything worked perfectly! I think that because my app requires an HTML to be created then read in by Shiny, the HTML that was being created was too large, or something else going on that despite my best efforts I cannot figure out. I decided to move forward in two ways: 
+
+1. Create a new dataset with 1000 random observations from each year, 2020-2024. Use this dataset to run the Shiny app to show that all the desired UI features work. 
+
+2. In a separate .py file, located in /test-app/full-year-htmls, create an HTML file that contains a map with the full data for each year. In testing my code, I realized that if I created an HTML outside of Shiny--just by running a .py file--that it was able to produce a map with all of the 2024 data. This is how I came to the conclusion that perhaps Shiny was unable to handle the larger data. This folder contains 5 HTMLs, one for each year, that has a map with crash points and ward boundaries. Of course, it will not have any Shiny UI features, but I did want a way to visualize the complete data. 
