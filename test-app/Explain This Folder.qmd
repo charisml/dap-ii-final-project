@@ -1,0 +1,184 @@
+I used this app to test and debug issues with getting a map to render inside the shiny app. For the final crashes app, I was trying to create an app that rendered an HTML file, saved it, then was opened inside the app. This kept returning a blank Shiny page, so I simplified the app to just be a map of Chicago's ward boundaries. I wanted to see if the problem was with the HTML, the saving, or Shiny. Here's an example of that code: 
+
+```{python}
+import shiny
+from shiny import ui, render, Inputs, Outputs
+import geopandas as gpd
+import folium
+
+# Load ward boundaries geojson
+ward_boundaries = gpd.read_file(r'C:\Users\User\OneDrive - The University of Chicago\4_DAP-2\Final Project Data\ward_boundaries.geojson')
+ward_boundaries = ward_boundaries.to_crs(epsg=3435)
+
+# Define UI
+app_ui = ui.page_fluid(
+    ui.output_ui("map_ui")
+)
+
+def server(input, output, session):
+    @output()
+    @render.ui
+    def map_ui():
+        # Create map
+        m = folium.Map(location=[41.882077, -87.627817], zoom_start=12)
+        
+        # Add ward boundaries to the map
+        folium.GeoJson(
+            ward_boundaries,
+            name="Ward Boundaries",
+            style_function=lambda x: {
+                "fillColor": "blue",
+                "color": "black",
+                "weight": 1,
+                "fillOpacity": 0.1,
+            },
+        ).add_to(m)
+        
+        # Save the map as an HTML file in the current working directory
+        map_html = "simple_map.html"
+        m.save(map_html)
+        
+        # Check if simple_map.html was saved correctly
+        with open(map_html, 'r', encoding='utf-8') as file:
+            map_content = file.read()
+        
+        # Return the map content within an iframe
+        return ui.HTML(f'<iframe srcdoc="{map_content}" width="100%" height="600px"></iframe>')
+
+app = shiny.App(app_ui, server)
+```
+
+I got the map I was expecting when I opened simple_map.html, but it wasn't appearing on the Shiny app. I first tried to debug issues with the file saving. I had trouble making it so that the HTML file was saving in the same folder as the app. I thought that the html content was not correctly loading into shiny because I got a 404 not found error in the browser. When I opened the HTML file directly, I was seeing the map I expected to see, but it was not appearing through Shiny. 
+
+Using Chatgpt, I explored a variety of ways to ensure that shiny was reading the correct file from the correct location. I further simplified the app to test these methods. Here are some examples, all of which were still producing the 404 Not Found error.
+
+```{python}
+import shiny
+from shiny import ui, render
+import folium
+import os
+
+# Define UI
+app_ui = ui.page_fluid(
+    ui.output_ui("map_ui")  # Output UI for the map
+)
+
+def server(input, output, session):
+    @output()
+    @render.ui
+    def map_ui():
+        # Define the path to `www` relative to the script location
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        www_dir = os.path.join(script_dir, "www")
+        os.makedirs(www_dir, exist_ok=True)
+
+        # Save the map as an HTML file in the `www` directory under `test-app`
+        map_html_path = os.path.join(www_dir, "simple_map.html")
+        m = folium.Map(location=[41.882077, -87.627817], zoom_start=12)
+        m.save(map_html_path)
+
+        # Check if the file was saved correctly
+        if not os.path.exists(map_html_path):
+            raise FileNotFoundError(f"Map file not found: {map_html_path}")
+
+        # Return iframe pointing to the file
+        return ui.HTML('<iframe src="/simple_map.html" width="100%" height="600px"></iframe>')
+
+app = shiny.App(app_ui, server)
+
+```
+
+
+```{python}
+import shiny
+from shiny import ui, render
+import folium
+import os
+from pathlib import Path
+
+# Define UI
+app_ui = ui.page_fluid(
+    ui.output_ui("map_ui")  # Output UI for the map
+)
+
+def server(input, output, session):
+    @output()
+    @render.ui
+    def map_ui():
+        # Create the map
+        m = folium.Map(location=[41.882077, -87.627817], zoom_start=12)
+
+        # Add a simple marker for testing
+        folium.Marker(
+            location=[41.882077, -87.627817],
+            popup="Test Marker",
+            icon=folium.Icon(color='blue')
+        ).add_to(m)
+
+        # Save the map in the `www` directory
+        app_dir = Path(__file__).parent  # Get the directory of this script
+        www_dir = app_dir / "www"  # Create the path to the `www` folder
+        os.makedirs(www_dir, exist_ok=True)
+        map_html_path = www_dir / "simple_map.html"
+        m.save(map_html_path)
+
+        # Return iframe pointing to the file served via Shiny
+        return ui.HTML('<iframe src="/static/simple_map.html" width="100%" height="600px"></iframe>')
+
+# Create and run the app
+app = shiny.App(app_ui, server, static_assets=str(Path(__file__).parent / "www"))
+
+```
+
+After ensuring that the files were being saved and read, and verifying that the HTML files looked accurate, I considered whether this may be a bug with Shiny itself. I found another person with these issues at <https://github.com/posit-dev/py-shiny/issues/421> and by entering their sample solution into chatgpt to use that as a guide, I finally landed on the code in app.py: 
+
+
+```{python}
+from pathlib import Path
+import shiny
+from shiny import ui, render, reactive
+import folium
+import os
+
+# Define paths
+app_dir = Path(__file__).parent
+www_dir = app_dir / "www"
+www_dir.mkdir(exist_ok=True)  # Create `www` directory if it doesn't exist
+
+# Define UI
+app_ui = ui.page_fluid(
+    ui.input_action_button("generate", "Generate Map"),  # Button to trigger map generation
+    ui.output_ui("map_ui"),  # Output UI for the map
+)
+
+def server(input, output, session):
+    @output
+    @render.ui
+    @reactive.event(input.generate)  # Render only when the button is clicked
+    def map_ui():
+        # Path for the HTML file
+        map_html_path = www_dir / "simple_map.html"
+
+        # Create and save the map
+        m = folium.Map(location=[41.882077, -87.627817], zoom_start=12)
+        folium.Marker(
+            location=[41.882077, -87.627817],
+            popup="Test Marker",
+            icon=folium.Icon(color="blue"),
+        ).add_to(m)
+        m.save(map_html_path)
+
+        # Debugging: Print paths and ensure everything is as expected
+        print(f"App Directory: {app_dir}")
+        print(f"www Directory: {www_dir}")
+        print(f"Map HTML Path: {map_html_path}")
+        print(f"Does file exist? {os.path.exists(map_html_path)}")
+
+        # Return iframe pointing to the static asset
+        return ui.HTML('<iframe src="simple_map.html" width="100%" height="600px"></iframe>')
+
+# Define the app with static_assets pointing to `www_dir`
+app = shiny.App(app_ui, server, static_assets=www_dir)
+
+```
+
