@@ -1,5 +1,10 @@
+---
+title: "Untitled"
+format: html
+---
 
 
+# Install Packages for Document
 ```{python}
 import pandas as pd
 import os
@@ -7,11 +12,14 @@ import csv
 import altair as alt
 import numpy as np
 import warnings
+import geopandas as gpd
+from shapely import wkt
+import matplotlib.pyplot as plt
+import plotly.express as px
 warnings.filterwarnings("ignore")
 ```
 
-Read in raw data (so I can use all columns), and keep only 10,000 rows 
-
+# Import raw data
 ```{python}
 #raw_data_path = r"C:\Users\User\OneDrive - The University of Chicago\4_DAP-2\Final Project Data"
 raw_data_path = r"/Users/charismalambert/Downloads" 
@@ -21,7 +29,7 @@ vehicles = pd.read_csv(os.path.join(raw_data_path, "traffic_crashes_vehicles.csv
 people = pd.read_csv(os.path.join(raw_data_path, "traffic_crashes_people.csv"))
 ```
 
-Keep data from 2016-present 
+# Keep data from 2016-present 
 ```{python}
 dfs = [crashes, vehicles, people]
 
@@ -43,12 +51,12 @@ for i, df in enumerate(dfs, 1):
     print(f"DataFrame {i} distinct counts per year:\n", count_distinct_crash_record_id(df), "\n")
 ```
 
-Remove observations where location data is unavailable 
+# Remove observations where location data is unavailable 
 ```{python}
 crashes_location = crashes.dropna(subset=['LOCATION'])
 ```
 
-Remove columns I won't use 
+# Remove columns we won't use 
 ```{python}
 crashes_location = crashes_location.drop(columns=['TRAFFIC_CONTROL_DEVICE', 
 'DEVICE_CONDITION','INTERSECTION_RELATED_I','NOT_RIGHT_OF_WAY_I','STREET_NO',
@@ -66,6 +74,7 @@ do this by merging people and crashes_location
 
 There are 161 observations where the dates for a given crash record ID do not match across the crashes and people datasets. If the mismatch in dates is greater than 7 days, I remove that observation from crashes_people
 
+# Clean DF
 ```{python}
 crashes_people = pd.merge(people, crashes_location, on='CRASH_RECORD_ID', how='inner')
 
@@ -85,34 +94,7 @@ mismatched_observations_over_7_days = mismatched_observations[mismatched_observa
 crashes_people = crashes_people[~crashes_people['CRASH_RECORD_ID'].isin(mismatched_observations_over_7_days['CRASH_RECORD_ID'])]
 ```
 
-Dataset is still too big. keep only 2020-2024, and make year column. And drop unnecessary columns. 
-
-```{python}
-# Keep only crash_date_y (from crashes dataset)
-crashes_gdf = crashes_gdf.drop(columns=['CRASH_DATE_x'])
-crashes_gdf = crashes_gdf.rename(columns={'CRASH_DATE_y':'CRASH_DATE'})
-crashes_gdf = crashes_gdf.drop(columns=['check'])
-
-crashes_gdf['YEAR'] = crashes_gdf['CRASH_DATE'].dt.year
-crashes_gdf = crashes_gdf[crashes_gdf['YEAR'] >= 2021]
-```
-
-Create smaller dfs for each year 
-```{python}
-crashes_2021 = crashes_gdf[(crashes_gdf["CRASH_DATE"] >= "2021-01-01") & (crashes_gdf["CRASH_DATE"] <= "2021-12-31")]
-crashes_2022 = crashes_gdf[(crashes_gdf["CRASH_DATE"] >= "2022-01-01") & (crashes_gdf["CRASH_DATE"] <= "2022-12-31")]
-crashes_2023 = crashes_gdf[(crashes_gdf["CRASH_DATE"] >= "2023-01-01") & (crashes_gdf["CRASH_DATE"] <= "2023-12-31")]
-crashes_2024 = crashes_gdf[(crashes_gdf["CRASH_DATE"] >= "2024-01-01") & (crashes_gdf["CRASH_DATE"] <= "2024-06-30")]
-```
-
-Create a basic map before starting the app
-```{python}
-import geopandas as gpd
-import pandas as pd
-from shapely import wkt
-import matplotlib.pyplot as plt
-```
-
+# Convert to same coordinate reference system
 ```{python}
 # # Convert location column to geoseries
 crashes_people['geometry'] = crashes_people['LOCATION'].apply(wkt.loads)
@@ -127,51 +109,205 @@ ward_boundaries = gpd.read_file(os.path.join(raw_data_path, 'ward_boundaries.geo
 ward_boundaries = ward_boundaries.to_crs(epsg=3435)
 ```
 
+# Keep only 2020-2024, and make year column. And drop unnecessary columns. 
 ```{python}
-# Plot the ward boundaries and 2021 crash points
-fig, ax = plt.subplots(figsize=(10, 10))
-ward_boundaries.plot(ax=ax, color='lightgrey', edgecolor='black')
-crashes_2021.plot(ax=ax, color='yellow', markersize=1, alpha=0.7)
-plt.show()
+# Keep only crash_date_y (from crashes dataset)
+crashes_gdf = crashes_gdf.drop(columns=['CRASH_DATE_x'])
+crashes_gdf = crashes_gdf.rename(columns={'CRASH_DATE_y':'CRASH_DATE'})
+crashes_gdf = crashes_gdf.drop(columns=['check'])
+
+crashes_gdf['YEAR'] = crashes_gdf['CRASH_DATE'].dt.year
+crashes_gdf = crashes_gdf[crashes_gdf['YEAR'] >= 2021]
 ```
 
+# Create SEASON column 
 ```{python}
-# Plot the ward boundaries and 2022 crash points
-fig, ax = plt.subplots(figsize=(10, 10))
-ward_boundaries.plot(ax=ax, color='lightgrey', edgecolor='black')
-crashes_2022.plot(ax=ax, color='purple', markersize=1, alpha=0.7)
-plt.show()
+# add SEASON column to create heatmap of accidents by season 
+def fill_season(month):
+    if month in [12, 1, 2]: 
+        return "Winter"
+    elif month in [3, 4, 5]:
+        return "Spring"
+    elif month in [6, 7, 8]:
+        return "Summer"
+    else: 
+        return "Fall"
+
+crashes_gdf["SEASON"] = crashes_gdf["CRASH_MONTH"].apply(fill_season)
 ```
 
-
-```{python}
-# Plot the ward boundaries and 2023 crash points
-fig, ax = plt.subplots(figsize=(10, 10))
-ward_boundaries.plot(ax=ax, color='lightgrey', edgecolor='black')
-crashes_2023.plot(ax=ax, color='blue', markersize=1, alpha=0.7)
-plt.show()
-```
-
-
-```{python}
-# Plot the ward boundaries and 2024 crash points
-fig, ax = plt.subplots(figsize=(10, 10))
-ward_boundaries.plot(ax=ax, color='lightgrey', edgecolor='black')
-crashes_2024.plot(ax=ax, color='red', markersize=1, alpha=0.7)
-plt.show()
-```
-
-```{python}
-# Plot the ward boundaries and 2024 crash points
-fig, ax = plt.subplots(figsize=(10, 10))
-ward_boundaries.plot(ax=ax, color='lightgrey', edgecolor='black')
-crashes_gdf.plot(ax=ax, color='green', markersize=1, alpha=0.7)
-plt.show()
-```
-
-
-
-Save data to csv for app
+# Save data to csv for app
 ```{python}
 crashes_gdf.to_csv('crashes_gdf.csv', index=False)
+```
+
+# Attempt Basic Heatmap before App integration 
+```{python}
+# Basic Code before app 
+tracking_by_season = crashes_gdf[crashes_gdf["YEAR"] == 2024].groupby(["SEASON", "CRASH_HOUR"]).size().reset_index(name = "count")
+
+heatmap = alt.Chart(tracking_by_season).mark_rect().encode(
+    x = "CRASH_HOUR:O",
+    y = "SEASON:O",
+    color = "count:Q", 
+).properties(
+    width = 600,
+    height = 300
+)
+
+heatmap
+```
+
+# Code to add to the App:
+```{python}
+# Dynamic for App: 
+# Include drop down for year (user modify) and crash_hour (constant)
+# Year range: 2021 - 2024
+
+def accidents_by_season(year):
+    tracking_by_season = crashes_gdf[crashes_gdf["YEAR"] == year].groupby(["SEASON", "CRASH_HOUR"]).size().reset_index(name = "count")
+
+    heatmap = alt.Chart(tracking_by_season).mark_rect().encode(
+        x = "CRASH_HOUR:O",
+        y = "SEASON:O",
+        color = "count:Q", 
+    ).properties(
+        title=f"Number of Accidents during each Season in {year}",
+        width = 600,
+        height = 300
+    ).configure_title(
+        fontSize = 18
+    )
+
+    heatmap.show()
+
+accidents_by_season(2021)
+```
+
+# Recode categorical column values to numbers
+```{python}
+# convert IV column values to numerical values to make them regression friendly and store in new df 
+# recode SEX as M: 1, F: 0, X and Nan = 2: 
+crashes_gdf["SEX_R"] = crashes_gdf["SEX"].replace({"M": 1, "F": 0, "X": 2, None: -1})
+
+# recode SEASON as Winter: 1, Spring: 2, Summer: 3, Fall: 4
+crashes_gdf["SEASON_R"] = crashes_gdf["SEASON"].replace({"Winter": 1, "Spring": 2, "Summer": 3, "Fall": 4})
+
+# recode PERSON_TYPE as Driver:0, Non-Driver(Passenger, Pedestrian,  Bicycle, Non-motor vehicle, Non-contact_vehicl): 1
+crashes_gdf["PERSON_TYPE_R"] = crashes_gdf["PERSON_TYPE"].replace({
+    'DRIVER':1,
+    'PASSENGER': 2,
+    'PEDESTRIAN': 3, 
+    'BICYCLE': 4, 
+    'NON-MOTOR VEHICLE': 5, 
+    'NON-CONTACT VEHICLE': 6
+})
+```
+
+
+```{python}
+# convert DV column values to numerical values to make them regression friendly
+
+# recode AIRBAG_DEPLOYED as Deploed, Combo: 1, Delpoyed, Front: 1, Deployed, Side: 1, Deployed Other:1, Did Not Deploy: 0, Not Applicable: 0, Deployment Unknown: 0
+crashes_gdf["AIRBAG_DEPLOYED_R"] = crashes_gdf["AIRBAG_DEPLOYED"].replace({
+    'DEPLOYED, COMBINATION': 1,
+    'DID NOT DEPLOY': 2,
+    'NOT APPLICABLE': 3,
+    'DEPLOYMENT UNKNOWN': 4,
+    'DEPLOYED, FRONT': 5,
+    'DEPLOYED, SIDE': 6,
+    'DEPLOYED OTHER (KNEE, AIR, BELT, ETC.)': 7,
+    None : -1
+})
+
+# recode INJURY_CLASSIFICATION as Injured( 'NONINCAPACITATING INJURY': 1, 'REPORTED, NOT EVIDENT': 1,  'INCAPACITATING INJURY': 1, 'FATAL': 1) and Non-Injured ('NO INDICATION OF INJURY': 0, nan:0)
+crashes_gdf["INJURY_CLASSIFICATION_R"] = crashes_gdf["INJURY_CLASSIFICATION"].replace({
+    'NO INDICATION OF INJURY': 0,
+    'NONINCAPACITATING INJURY': 1 ,
+    'REPORTED, NOT EVIDENT': 2,
+    'INCAPACITATING INJURY': 3 ,
+    'FATAL': 4 ,
+    None: -1
+})
+# recode EJECTION as Ejected('TOTALLY EJECTED': 1, 'PARTIALLY EJECTED': 1) or Not-Ejeccted ('TRAPPED/EXTRICATED': 0, 'NONE': 0, 'UNKNOWN': 0,  nan: 0)
+crashes_gdf["EJECTION_R"] = crashes_gdf["EJECTION"].replace({
+    'TOTALLY EJECTED':  1,
+    'TRAPPED/EXTRICATED' : 2,
+    'PARTIALLY EJECTED': 3 ,
+    'NONE': 0,
+    'UNKNOWN': 0 ,
+    None: - 1
+})
+
+regression_df = crashes_gdf.dropna(subset = ["AGE"])
+regression_df
+```
+
+# Save to new df 
+```{python}
+# filter for 2024 to continue to practice on code below before APP integration
+#regression_df = regression_df[regression_df["YEAR"] == 2024]
+regression_df.to_csv('regression_df.csv', index=False)
+```
+
+# Basic regressions before adding to App:
+IV: AGE, SEX_R, SEASON_R, PERSON TYPE_R
+DV: AIRBAG_DEPLOYED_R, INJURY_CLASSIFICATION_R, EJECTION_R
+```{python}
+
+
+def variable_relationships(IV, DV):
+    if IV == "AGE":
+        fig = px.box(regression_df, 
+            x = DV, 
+            y = IV,
+            color = DV,
+            title = f"{IV} vs {DV} for Traffic Crashes in 2024",
+            labels = {IV: IV, DV: DV})
+    else: 
+        fig = px.histogram(regression_df,
+            x = IV,
+            y = DV,
+            barmode = 'group',
+            title = f"{IV} vs {DV} for Traffic Crashes in 2024",
+            labels = {IV: IV, DV: DV})
+    fig.update_layout(legend_title_text = DV)
+    fig.show()
+
+variable_relationships("SEX", "EJECTION_R")
+```
+
+# Code to add to the App:
+```{python}
+# Drop down for IV, DV, YEAR
+# IV's = Age, Sex, Season, Person_Type
+# DV's = Injury_Classification, Airbag_Deployed, Ejection
+# Year
+
+# Based on what is chosen, produce regression stats that are user friendly
+
+def variable_relationships(IV, DV, year):
+    use_this_df = regression_df[regression_df["YEAR"] == year]
+    if IV == "AGE":
+        fig = px.box(use_this_df, 
+            x = DV, 
+            y = IV,
+            color = DV,
+            title = f"{IV} vs {DV} for Traffic Crashes in {year}",
+            labels = {IV: IV, DV: DV})
+    else: 
+        fig = px.histogram(use_this_df,
+            x = IV,
+            y = DV,
+            barmode = 'group',
+            title = f"{IV} vs {DV} for Traffic Crashes in 2024",
+            labels = {IV: IV, DV: DV})
+    fig.update_layout(legend_title_text = DV)
+    fig.show()
+
+variable_relationships("PERSON_TYPE", "EJECTION", 2023)
+```
+
+```{python}
+regression_df.head()
 ```
