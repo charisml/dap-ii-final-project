@@ -38,6 +38,3 @@ __pycache__/
 .idea/
 *.sublime-workspace
 *.sublime-projectx
-
-# Quarto cache
-.quarto/cache/
