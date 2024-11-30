@@ -16,7 +16,8 @@ www_dir = app_dir / "www"
 # Ensure directory exists
 www_dir.mkdir(exist_ok=True)  
 crashes_gdf = gpd.read_file(r'C:\Users\User\Documents\GitHub\dap-ii-final-project\Data\crashes_gdf_sample.csv')
-
+#crashes_gdf = pd.read_csv(r'/Users/charismalambert/Desktop/crashes_gdf.csv')
+ 
 # Ensure geometry is properly set
 crashes_gdf['geometry'] = crashes_gdf['LOCATION'].apply(wkt.loads)
 crashes_gdf = gpd.GeoDataFrame(crashes_gdf, geometry='geometry')
@@ -47,6 +48,7 @@ processed_data = gpd.GeoDataFrame(pd.concat(processed_chunks, ignore_index=True)
 
 # Load ward boundaries geojson
 ward_boundaries = gpd.read_file(r'C:\Users\User\OneDrive - The University of Chicago\4_DAP-2\Final Project Data\ward_boundaries.geojson')
+#ward_boundaries = gpd.read_file(r"/Users/charismalambert/Desktop/ward_boundaries.geojson")
 ward_boundaries = ward_boundaries.to_crs(epsg=3435)
 
 app_ui = ui.page_fluid(
