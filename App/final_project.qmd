@@ -138,7 +138,7 @@ crashes_gdf["SEASON"] = crashes_gdf["CRASH_MONTH"].apply(fill_season)
 
 # Save data to csv for app
 ```{python}
-crashes_gdf.to_csv('crashes_gdf.csv', index=False)
+#crashes_gdf.to_csv('crashes_gdf.csv', index=False)
 ```
 
 # Attempt Basic Heatmap before App integration 
