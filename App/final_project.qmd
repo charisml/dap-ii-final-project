@@ -1,8 +1,8 @@
 ---
-title: "Untitled"
+Collaborators: "Charisma Lambert and Lizzy Diaz"
 format: html
 ---
-
+# Link to Data: https://drive.google.com/drive/folders/1ntjCQQKccntvuSwcqXkeLCpRBx7s2-Xz?usp=sharing
 
 # Install Packages for Document
 ```{python}
@@ -16,11 +16,12 @@ import geopandas as gpd
 from shapely import wkt
 import matplotlib.pyplot as plt
 import plotly.express as px
+import random
 warnings.filterwarnings("ignore")
 ```
 
 # Import raw data
-```{python}
+```{python, cache = True}
 #raw_data_path = r"C:\Users\User\OneDrive - The University of Chicago\4_DAP-2\Final Project Data"
 raw_data_path = r"/Users/charismalambert/Downloads" 
 
@@ -188,10 +189,11 @@ accidents_by_season(2021)
 ```{python}
 # convert IV column values to numerical values to make them regression friendly and store in new df 
 # recode SEX as M: 1, F: 0, X and Nan = 2: 
-crashes_gdf["SEX_R"] = crashes_gdf["SEX"].replace({"M": 1, "F": 0, "X": 2, None: -1})
+crashes_gdf["SEX_R"] = crashes_gdf["SEX"].replace({"M": 1, "F": 0, "X": 2, None: -1}).astype("float64")
 
 # recode SEASON as Winter: 1, Spring: 2, Summer: 3, Fall: 4
-crashes_gdf["SEASON_R"] = crashes_gdf["SEASON"].replace({"Winter": 1, "Spring": 2, "Summer": 3, "Fall": 4})
+crashes_gdf["SEASON_R"] = crashes_gdf["SEASON"].replace({"Winter": 1, "Spring": 2, "Summer": 3, "Fall": 4}).astype("float64")
+
 
 # recode PERSON_TYPE as Driver:0, Non-Driver(Passenger, Pedestrian,  Bicycle, Non-motor vehicle, Non-contact_vehicl): 1
 crashes_gdf["PERSON_TYPE_R"] = crashes_gdf["PERSON_TYPE"].replace({
@@ -201,7 +203,8 @@ crashes_gdf["PERSON_TYPE_R"] = crashes_gdf["PERSON_TYPE"].replace({
     'BICYCLE': 4, 
     'NON-MOTOR VEHICLE': 5, 
     'NON-CONTACT VEHICLE': 6
-})
+}).astype("float64")
+
 ```
 
 
@@ -218,7 +221,8 @@ crashes_gdf["AIRBAG_DEPLOYED_R"] = crashes_gdf["AIRBAG_DEPLOYED"].replace({
     'DEPLOYED, SIDE': 6,
     'DEPLOYED OTHER (KNEE, AIR, BELT, ETC.)': 7,
     None : -1
-})
+}).astype("float64")
+
 
 # recode INJURY_CLASSIFICATION as Injured( 'NONINCAPACITATING INJURY': 1, 'REPORTED, NOT EVIDENT': 1,  'INCAPACITATING INJURY': 1, 'FATAL': 1) and Non-Injured ('NO INDICATION OF INJURY': 0, nan:0)
 crashes_gdf["INJURY_CLASSIFICATION_R"] = crashes_gdf["INJURY_CLASSIFICATION"].replace({
@@ -228,7 +232,8 @@ crashes_gdf["INJURY_CLASSIFICATION_R"] = crashes_gdf["INJURY_CLASSIFICATION"].re
     'INCAPACITATING INJURY': 3 ,
     'FATAL': 4 ,
     None: -1
-})
+}).astype("float64")
+
 # recode EJECTION as Ejected('TOTALLY EJECTED': 1, 'PARTIALLY EJECTED': 1) or Not-Ejeccted ('TRAPPED/EXTRICATED': 0, 'NONE': 0, 'UNKNOWN': 0,  nan: 0)
 crashes_gdf["EJECTION_R"] = crashes_gdf["EJECTION"].replace({
     'TOTALLY EJECTED':  1,
@@ -237,7 +242,8 @@ crashes_gdf["EJECTION_R"] = crashes_gdf["EJECTION"].replace({
     'NONE': 0,
     'UNKNOWN': 0 ,
     None: - 1
-})
+}).astype("float64")
+
 
 regression_df = crashes_gdf.dropna(subset = ["AGE"])
 regression_df
@@ -245,17 +251,47 @@ regression_df
 
 # Save to new df 
 ```{python}
-# filter for 2024 to continue to practice on code below before APP integration
-#regression_df = regression_df[regression_df["YEAR"] == 2024]
+def reduce_data(data):
+    # List of years in the dataset
+    years = data["YEAR"].unique()
+    
+    # This will hold the reduced DataFrame
+    reduced_df_list = []
+    
+    for year in years:
+        # Filter the data for the current year
+        year_data = data[data["YEAR"] == year]
+        
+        # Perform stratified sampling, keeping exactly 1000 rows for each year
+        # Group by 'SEX_R' and 'PERSON_TYPE_R', and sample within each group
+        stratified_sample = year_data.groupby(['SEX_R', 'PERSON_TYPE_R'], group_keys=False).apply(
+            lambda x: x.sample(frac=1, random_state=42)
+        )
+        
+        # Now sample 1000 rows from the stratified dataset
+        if len(stratified_sample) > 1000:
+            stratified_sample = stratified_sample.sample(n=1000, random_state=42)
+        
+        reduced_df_list.append(stratified_sample)
+    
+    # Concatenate all sampled dataframes into one
+    reduced_df = pd.concat(reduced_df_list)
+    
+    return reduced_df
+
+# Apply the function to reduce the size of the dataframe
+regressions_df_reduced = reduce_data(regression_df)
+
 regression_df.to_csv('regression_df.csv', index=False)
+
+# Citation: Initially, I did a random sample of 1000 rows per year but I did not norm that my 
+# categorical variables were the same and when I ran the rest of my code, I noticed that SEX was only male, etc. I ran a query in ChatGPT on how to keep the proportion of categorical variables the same in my sample, as is in the original dataset. The query returned lines "stratified_sameple".. and on. 
 ```
 
 # Basic regressions before adding to App:
 IV: AGE, SEX_R, SEASON_R, PERSON TYPE_R
 DV: AIRBAG_DEPLOYED_R, INJURY_CLASSIFICATION_R, EJECTION_R
 ```{python}
-
-
 def variable_relationships(IV, DV):
     if IV == "AGE":
         fig = px.box(regression_df, 
@@ -306,8 +342,4 @@ def variable_relationships(IV, DV, year):
     fig.show()
 
 variable_relationships("PERSON_TYPE", "EJECTION", 2023)
-```
-
-```{python}
-regression_df.head()
 ```
