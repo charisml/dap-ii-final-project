@@ -53,7 +53,7 @@ for i in range(len(dfs)):
     dfs[i]['YEAR'] = dfs[i]['CRASH_DATE'].dt.year
 ```
 
-Data cleaning and exploration
+## Data cleaning and exploration
 
 ```{python}
 # Function to count distinct CRASH_RECORD_ID per year
@@ -144,6 +144,12 @@ crashes_gdf = crashes_gdf.drop(columns=['check'])
 
 crashes_gdf['YEAR'] = crashes_gdf['CRASH_DATE'].dt.year
 crashes_gdf = crashes_gdf[crashes_gdf['YEAR'] >= 2020]
+
+# Add single address column 
+crashes_gdf['ADDRESS'] = crashes_gdf['STREET_NO'].astype(str) + " " + crashes_gdf['STREET_DIRECTION'] + " " + crashes_gdf['STREET_NAME']
+crashes_gdf = crashes_gdf.drop(columns=['STREET_NO', 'STREET_DIRECTION',
+'STREET_NAME'])
+
 ```
 
 Save data to csv for app
