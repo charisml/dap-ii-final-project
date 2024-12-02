@@ -39,17 +39,16 @@ warnings.filterwarnings("ignore")
 
 # Import raw data
 ```{python, cache = True}
-#raw_data_path = r"C:\Users\User\OneDrive - The University of Chicago\4_DAP-2\Final Project Data"
-raw_data_path = r"/Users/charismalambert/Downloads" 
+raw_data_path = r"C:\Users\User\OneDrive - The University of Chicago\4_DAP-2\Final Project Data"
+# raw_data_path = r"/Users/charismalambert/Downloads" 
 
 crashes = pd.read_csv(os.path.join(raw_data_path, "traffic_crashes_crashes.csv"))
-vehicles = pd.read_csv(os.path.join(raw_data_path, "traffic_crashes_vehicles.csv"))
 people = pd.read_csv(os.path.join(raw_data_path, "traffic_crashes_people.csv"))
 ```
 
 # Keep data from 2016-present 
 ```{python}
-dfs = [crashes, vehicles, people]
+dfs = [crashes, people]
 
 # Convert the CRASH_DATE column to datetime and filter for 2016-present
 for i in range(len(dfs)):
@@ -73,7 +72,9 @@ for i, df in enumerate(dfs, 1):
 ```{python}
 crashes_location = crashes.dropna(subset=['LOCATION'])
 ```
-Remove columns I won't use 
+
+# Remove columns we won't use 
+
 ```{python}
 crashes_location = crashes_location.drop(columns=['TRAFFIC_CONTROL_DEVICE', 
 'DEVICE_CONDITION','INTERSECTION_RELATED_I','NOT_RIGHT_OF_WAY_I', 'BEAT_OF_OCCURRENCE',
@@ -90,6 +91,7 @@ Remove observations in people for which there is no corresponding 'crash_record_
 do this by merging people and crashes_location
 
 There are 161 observations where the dates for a given crash record ID do not match across the crashes and people datasets. If the mismatch in dates is greater than 7 days, I remove that observation from crashes_people
+
 ```{python}
 crashes_people = pd.merge(people, crashes_location, on='CRASH_RECORD_ID', how='inner')
 
@@ -111,7 +113,7 @@ crashes_people = crashes_people[~crashes_people['CRASH_RECORD_ID'].isin(mismatch
 
 # Convert to same coordinate reference system
 ```{python}
-# # Convert location column to geoseries
+# Convert location column to geoseries
 crashes_people['geometry'] = crashes_people['LOCATION'].apply(wkt.loads)
 crashes_gdf = gpd.GeoDataFrame(crashes_people, geometry='geometry')
 
@@ -131,12 +133,9 @@ crashes_gdf.plot(ax=ax, color='red', markersize=1, alpha=0.7)
 plt.show()
 ```
 
-Dataset is still too big. Keep only 2020-2024, and make year column. And drop unnecessary columns. 
-=======
-```
 
+# To make dataset manageable, keep only 2020-2024, and make year column. And drop unnecessary columns. 
 
-# Keep only 2020-2024, and make year column. And drop unnecessary columns. 
 ```{python}
 # Keep only crash_date_y (from crashes dataset)
 crashes_gdf = crashes_gdf.drop(columns=['CRASH_DATE_x'])
@@ -156,10 +155,12 @@ crashes_gdf = crashes_gdf.drop(columns=['STREET_NO', 'STREET_DIRECTION',
 
 Save data to csv for app
 ```{python}
+#| echo: false
 crashes_gdf.to_csv('crashes_gdf.csv', index=False)
 ```
 
-Create a new dataset to run app - 1,000 random samples from each year.
+# Create a new dataset to run app - 1,000 random samples from each year
+
 ```{python}
 crashes_gdf_sample = crashes_gdf.groupby('YEAR').sample(n=1000, random_state=1)
 
@@ -167,13 +168,14 @@ crashes_gdf_sample = crashes_gdf.groupby('YEAR').sample(n=1000, random_state=1)
 crashes_gdf_sample['ADDRESS'] = crashes_gdf['STREET_NO'].astype(str) + " " + crashes_gdf['STREET_DIRECTION'] + " " + crashes_gdf['STREET_NAME']
 crashes_gdf_sample = crashes_gdf_sample.drop(columns=['STREET_NO', 'STREET_DIRECTION',
 'STREET_NAME'])
+```
 
+```{python}
+#| echo: false
 crashes_gdf_sample.to_csv('crashes_gdf_sample.csv', index=False)
 ```
 
-crashes_gdf = crashes_gdf[crashes_gdf['YEAR'] >= 2021]
-```
-
+## Regression app dataset
 # Create SEASON column 
 ```{python}
 # add SEASON column to create heatmap of accidents by season 
@@ -189,7 +191,6 @@ def fill_season(month):
 
 crashes_gdf["SEASON"] = crashes_gdf["CRASH_MONTH"].apply(fill_season)
 ```
-
 
 # Attempt Basic Heatmap before App integration 
 ```{python}
@@ -295,7 +296,6 @@ crashes_gdf["EJECTION_R"] = crashes_gdf["EJECTION"].replace({
 
 
 regression_df = crashes_gdf.dropna(subset = ["AGE"])
-regression_df
 ```
 
 # Save to new df 
@@ -330,12 +330,16 @@ def reduce_data(data):
 
 # Apply the function to reduce the size of the dataframe
 regressions_df_reduced = reduce_data(regression_df)
-
-regression_df.to_csv('regression_df.csv', index=False)
-
-# Citation: Initially, I did a random sample of 1000 rows per year but I did not norm that my 
-# categorical variables were the same and when I ran the rest of my code, I noticed that SEX was only male, etc. I ran a query in ChatGPT on how to keep the proportion of categorical variables the same in my sample, as is in the original dataset. The query returned lines "stratified_sameple".. and on. 
 ```
+
+```{python}
+#| echo: false
+regression_df.to_csv('regression_df.csv', index=False)
+```
+
+### Citation
+
+Initially, I did a random sample of 1000 rows per year but I did not norm that my categorical variables were the same and when I ran the rest of my code, I noticed that SEX was only male, etc. I ran a query in ChatGPT on how to keep the proportion of categorical variables the same in my sample, as is in the original dataset. The query returned lines "stratified_sameple".. and on. 
 
 # Basic regressions before adding to App:
 IV: AGE, SEX_R, SEASON_R, PERSON TYPE_R

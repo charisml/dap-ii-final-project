@@ -61,9 +61,15 @@ app_ui = ui.page_fluid(
     ),
     ui.input_select(
         "crash_type",
-        "Select a Crash Type",
+        "Filter by Crash Type",
         choices=["All Crashes"] + sorted(processed_data['FIRST_CRASH_TYPE'].dropna().unique().tolist()),
-        selected = 'All Crashes'
+        selected = "All Crashes"
+    ),
+    ui.input_select(
+        "most_severe_injury",
+        "Filter by Most Severe Injury",
+        choices=["All Crashes"] + sorted(processed_data['MOST_SEVERE_INJURY'].dropna().unique().tolist()),
+        selected = "All Crashes"
     ),
     ui.output_ui("map_ui")
 )
@@ -74,6 +80,7 @@ def server(input, output, session):
     def map_ui():
         selected_year = input.year()
         selected_crash_type = input.crash_type()
+        selected_injury = input.most_severe_injury()
 
         # Filter by year and include option for all years
         processed_data['YEAR'] = processed_data['YEAR'].astype(str) # Trying to fix filtering problem 
@@ -91,6 +98,10 @@ def server(input, output, session):
         # Filter by crash type
         if selected_crash_type != "All Crashes":
             filtered_data = filtered_data[filtered_data['FIRST_CRASH_TYPE'] == selected_crash_type]
+
+        # Filter by severity
+        if selected_injury != "All Crashes":
+            filtered_data = filtered_data[filtered_data['MOST_SEVERE_INJURY'] == selected_injury]
         
         # set map starting location at center of Chicago grid - State x Madison
         m = folium.Map(location=[41.882077, -87.627817], zoom_start=12)
