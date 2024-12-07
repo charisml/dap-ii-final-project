@@ -4,9 +4,9 @@
 Data and Programming II Final Project (Fall 2024)
 
 These research questions came out of personal interest as we have either experienced and/or witnessed crashes in Chicago and were curious about the frequency and cause of such occurrences. The Chicago Data Portal contained three different data sets for us to examine: 
-Traffic Crashes - Crashes: Contains data on traffic crashes within city limits of Chicago and the reporting Chicago Police Department jurisdiction. 
-Traffic Crashes - People: Contains data on the people involved in traffic crashes and their level of injury. Involvement is defined as being an occupant in the vehicle at time of crash or the other party in the crash (pedestrian, cyclist, etc.).
-Traffic Crashes - Vehicle: Contains data on the vehicles involved in the accident, which includes motor vehicle and non-motor vehicle modes of transportation. 
+- Traffic Crashes - Crashes: Contains data on traffic crashes within city limits of Chicago and the reporting Chicago Police Department jurisdiction. 
+- Traffic Crashes - People: Contains data on the people involved in traffic crashes and their level of injury. Involvement is defined as being an occupant in the vehicle at time of crash or the other party in the crash (pedestrian, cyclist, etc.).
+- Traffic Crashes - Vehicle: Contains data on the vehicles involved in the accident, which includes motor vehicle and non-motor vehicle modes of transportation. 
 
 After cleaning, our dataset was too large for Github and to be processed by Shiny, so we had to truncate it even more to hold 1,000 random instances per year. The final Shiny app map contains a simple random sampling of 1,000 crash instances per year. For the statistical analysis app, the random sample was stratified to keep the same ratio of data from the original dataset in the sample (ie- if the original dataset had 30% F and 70% M, our sample would have that same ratio). We maintained the original idea to visualize all crashes on a map, and achieved this by generating a simple HTML map of all crashes for a given year. We generated five maps, one for each year 2020-2025, which are available in our Google Drive data folder. 
 
