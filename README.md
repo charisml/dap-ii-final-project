@@ -18,7 +18,7 @@ From examining these variables, users can understand the following about Chicago
 - The fewest accidents were in Spring 2021, otherwise each year's’ accident frequency is relatively the same
 - More accidents occurring earlier in the day Fall and Summer
 - Wide range of people involved, mostly 20-60 yo.
-- 
+  
 One major policy implication is the need to address the high frequency of crashes during rush hour (3 - 6pm). An intervention to consider is optimizing traffic light timings. Additionally, improving infrastructure like protected bike lanes and pedestrian-friendly designs can enhance safety for vulnerable road users. A city that does this well is Pittsburgh. Pittsburgh’s use of the diagonal street crossings, known as the “Barnes Dance,” optimizes crossing pathways for pedestrians and allows drivers to benefit from longer green lights, leading to less crashes due to the optimization of the traffic flow.  
 
 For future use, download our repository locally by cloning it to your local network. After cloning, ensure your local environment is set up to run our code by navigating to the folder where you’ve cloned. Then change directory (cd) to the Apps folder and cd to crash-map. Finally, run python app.py. Copy the generated url (http://127.0.0.1:8000 ) into your webpage to interact with our application and findings. 
