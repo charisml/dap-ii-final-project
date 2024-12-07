@@ -10,7 +10,7 @@ These research questions came out of personal interest as we have either experie
 
 After cleaning, our dataset was too large for Github and to be processed by Shiny, so we had to truncate it even more to hold 1,000 random instances per year. The final Shiny app map contains a simple random sampling of 1,000 crash instances per year. For the statistical analysis app, the random sample was stratified to keep the same ratio of data from the original dataset in the sample (ie- if the original dataset had 30% F and 70% M, our sample would have that same ratio). We maintained the original idea to visualize all crashes on a map, and achieved this by generating a simple HTML map of all crashes for a given year. We generated five maps, one for each year 2020-2025, which are available in our Google Drive data folder. 
 
-In our analysis we examined the demographic data as independent variables and crash outcomes as dependent variables. The variables that users can choose from are:Age, Sex, Person_Type,  Injury_Classification, Ejection, and Airbag_Deployed.
+In our analysis we examined the demographic data as independent variables and crash outcomes as dependent variables. The variables that users can choose from are: Age, Sex, Person_Type,  Injury_Classification, Ejection, and Airbag_Deployed.
 From examining these variables, users can understand the following about Chicago crashes: 
 
 - Men are more likely to get into traffic accidents
@@ -18,6 +18,8 @@ From examining these variables, users can understand the following about Chicago
 - The fewest accidents were in Spring 2021, otherwise each year's’ accident frequency is relatively the same
 - More accidents occurring earlier in the day Fall and Summer
 - Wide range of people involved, mostly 20-60 yo.
+
+  
 <img width="511" alt="Screenshot 2024-12-01 at 11 00 41 PM" src="https://github.com/user-attachments/assets/ed7d0b33-54cc-4e8d-a2a6-53c1b3c00092">
 <img width="511" alt="Screenshot 2024-12-01 at 11 01 00 PM" src="https://github.com/user-attachments/assets/627c50e4-1181-48eb-b378-a0125ea4be25">
 <img width="508" alt="Screenshot 2024-12-01 at 11 00 54 PM" src="https://github.com/user-attachments/assets/e66ae379-3825-4137-8927-2c75ada557c8">
