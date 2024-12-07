@@ -18,8 +18,9 @@ From examining these variables, users can understand the following about Chicago
 - The fewest accidents were in Spring 2021, otherwise each year's’ accident frequency is relatively the same
 - More accidents occurring earlier in the day Fall and Summer
 - Wide range of people involved, mostly 20-60 yo.
-<img width="511" alt="Screenshot 2024-12-01 at 11 01 00 PM" src="https://github.com/user-attachments/assets/627c50e4-1181-48eb-b378-a0125ea4be25">
 <img width="511" alt="Screenshot 2024-12-01 at 11 00 41 PM" src="https://github.com/user-attachments/assets/ed7d0b33-54cc-4e8d-a2a6-53c1b3c00092">
+<img width="511" alt="Screenshot 2024-12-01 at 11 01 00 PM" src="https://github.com/user-attachments/assets/627c50e4-1181-48eb-b378-a0125ea4be25">
+<img width="508" alt="Screenshot 2024-12-01 at 11 00 54 PM" src="https://github.com/user-attachments/assets/e66ae379-3825-4137-8927-2c75ada557c8">
 <img width="512" alt="Screenshot 2024-12-01 at 11 00 48 PM" src="https://github.com/user-attachments/assets/e46044a1-41fb-4a3e-bb91-e1d838238b7c">
 
 
