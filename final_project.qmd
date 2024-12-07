@@ -8,54 +8,46 @@ format:
       text: |
         \usepackage{fvextra}
         \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
-        \RecustomVerbatimEnvironment{verbatim}{Verbatim}{
+        \RecustomVerbatimEnvironment{verbatim}{Verbatim} {
           showspaces = false,
           showtabs = false,
           breaksymbolleft={},
           breaklines
         }
         \usepackage{titling}
-        \setlength{\droptitle}{-2em} % Reduce space above the title
-        \pretitle{\begin{center}\large\bfseries\vspace{-1em}}
-        \posttitle{\end{center}\vspace{-1em}}
+        \setlength{\droptitle}{-2.5em} % Adjust vertical space above title
+        \pretitle{\begin{center}\normalsize\bfseries\vspace{-1em}} % Smaller title, less space above
+        \posttitle{\end{center}\vspace{-1em}} % Less space below title
+        \preauthor{\begin{center}\small\vspace{-0.5em}} % Smaller author names, less space above
+        \postauthor{\end{center}\vspace{-1em}} % Less space below authors
+        \predate{\begin{center}\small\vspace{-0.5em}} % Smaller date, less space above
+        \postdate{\end{center}\vspace{-2em}} % Less space below date
     fontsize: 10pt
+  html:
+    self-contained: true # Ensures images and assets are included in the HTML output
 execute: 
   eval: false
 geometry: margin=2cm
 ---
 
+
 ### Contributions
-\begin{minipage}[t]{0.45\textwidth}
-Lizzy Diaz
-**Github**: lizzydiaz
-
-* **Data cleaning**
-  + Removal of columns not needed
-  + Remove columns without location data
-  + Creation of columns crash month, year, hour
-  + Merge original data on crash ID
-  + Random sample of 1000 instances per year (2020–2024)
-* **Crash maps**
-  + App
-  + Supplementary HTMLs
-* **Test apps** (explained in Appendix III)
-\end{minipage}
-\hfill
-\begin{minipage}[t]{0.45\textwidth}
-Charisma Lambert
-**Github**: charisml
-
-* **Data Cleaning**
-  + Initial exploration of data and cleaning
-  + Adding Season column
-  + Creation of regression_df
-  + Take stratified sample of 1000 random instances per year (2021–2024)
-* **Visualization App**
-\end{minipage}
+| **Lizzy Diaz**                         | **Charisma Lambert**                  |
+|----------------------------------------|---------------------------------------|
+| **Github**: lizzydiaz                  | **Github**: charisml                  |
+| Data cleaning                          | Data Cleaning                         |
+| - Removal of columns not needed        | - Initial exploration of data         |
+| - Remove columns without location data | - Adding Season column                |
+| - Creation of columns crash month, year, hour | - Creation of regression_df    |
+| - Merge original data on crash ID      | - Take stratified sample (2021-2024)  |
+| - Random sample (2020-2024)            | Visualization App                     |
+| Crash maps                             |                                       |
+| - App and HTMLs                        |                                       |
+| Test apps (see Appendix III)           |                                       |
 
 ## Transportation and Public Safety
 
-We examined traffic crash data in order to answer the following questions: What is the state of traffic safety in Chicago? What factors influence vehicle crashes? These research questions came out of personal interest as we have either experienced and/or witnessed crashes in Chicago and were curious about the frequency and cause of such occurrences. Simply by observing the city around us, we recognize that traffic safety is a pervasive problem in Chicago, and analyzing this data can help to evaluate the scope of the problem and strategize targeted investments into improving the most affected areas.
+We examined vehicle crash data in order to answer the following questions: What is the state of traffic safety in Chicago? What factors influence vehicle crashes? These research questions came out of personal interest, and simply by observing the city around us. We recognize that traffic safety is a pervasive problem in Chicago, and analyzing this data can help to evaluate the scope of the problem and strategize targeted investments into improving the most affected areas.
 
 ### Data and Methodology
 
@@ -65,15 +57,13 @@ We explored three datasets from [the Chicago Data Portal](https://data.cityofchi
 
 2.  Traffic Crashes - People: Contains data on the people involved in traffic crashes and their level of injury. Involvement is defined as being an occupant in the vehicle at time of crash or the other party in the crash (pedestrian, cyclist, etc.).
 
-3.  Traffic Crashes - Vehicles: Contains data on the vehicles involved in the accident, which includes motor vehicle and non-motor vehicle modes of transportation.
+From the information provided about the dataset and what we could decipher from cleaning, one accident can have multiple instances in all of the datasets. For example, look at the visual below. If there was a vehicular car crash involving two cars, where there were two and three people in the respective vehicles, the people dataset would have five instances, one for each person involved, and the crashes dataset might have 1 or 2, depending on if they are reporting the crash twice.
 
-From the information provided about the dataset and what we could decipher from cleaning, one accident can have multiple instances in all of the datasets. For example, look at the visual below. If there was a vehicular car crash involving two cars, grey and red, where there were two and three people in the respective vehicles, the vehicle dataset would have two instances, one for the grey car and one for the red, the people dataset would have five instances, one for each person involved, and the crashes dataset might have 1 - 2, depending on if they are reporting the crash both ways (grey car hit the red car and/or red car was hit by the grey car).
+![](pictures/crash-picture.png){width=25%}
 
-![](pictures/crash-picture.png){width=40%}
+Our knowledge of how the different datasets were reporting information greatly informed how we cleaned the data. We were primarily interested in the types of people involved (vehicle drivers, passengers, pedestrians, cyclists, etc.), conditions that caused the crash (time of day, weather, variables describing the driver, etc.), and variables describing the severity of the crash (whether an airbag was deployed, worst injury sustained, etc.).
 
-Our knowledge of how the different datasets were reporting information greatly informed how we cleaned the data. We kept essential columns that helped to describe each accident and removed those that were not as necessary or too niche to the accident type. We were primarily interested in the types of people involved (vehicle drivers, passengers, pedestrians, cyclists, etc.), conditions that caused the crash (time of day, weather, variables describing the driver, etc.), and variables describing the severity of the crash (whether an airbag was deployed, worst injury sustained, etc.).
-
-Ultimately, we combined 'Traffic Crashes - People' and 'Traffic Crashes - Crashes', and merged on Crash ID. We also used a geojson file of the Chicago ward boundaries to add a layer of spatial information to the final map. We kept observations from 2020-2024 for which there was reported location data. We removed observations where there was a \>7-day discrepancy between the crash date given a unique crash ID across the two merged datasets.
+We combined 'Traffic Crashes - People' and 'Traffic Crashes - Crashes', and merged on Crash ID. We also used a geojson file of the Chicago ward boundaries to add a layer of spatial information to the final map. We kept observations from 2020-2024 for which there was reported location data. We removed observations where there was a \>7-day discrepancy between the crash date given a unique crash ID across the two datasets.
 
 We selected these years for a couple reasons: time effects and data limitations. Knowing the impact COVID-19 had on movement in 2020, we were curious to see how that pattern emerged on the map. There were 26,263 fewer unique crash IDs reported in 2020 compared to the average of 2018-2019. Additionally, it appeared that 2015-2016 had incomplete data or different reporting methodology. Finally, the dataset was quite large–the raw data file was about one million rows. Considering these limitations, we chose to only analyze data from 2020-2024 on the maps, and 2021-2024 for the statistical analysis.
 
@@ -86,25 +76,24 @@ The final outcome of this project are two Shiny apps that allows users to take a
 **Visualization App**
 
 * Static Visual of Demographic Information
-
-![](/pictures/viz-1.png){width=50%}
-
 * Static Heatmaps of Crash Occurences by Hour over the Seasons in the years 2021 - 2024
-
-![](/pictures/viz-2.png){width=50%}
-
 * Dynamic Variable Relationships Bar Chart: User Selects Variables and Year
 
-![](/pictures/viz-3.png){width=50%}
+::: {layout-ncol=3}
+![](/pictures/viz-1.png){width=50% .lightbox}
+
+![](/pictures/viz-2.png){width=50% .lightbox}
+
+![](/pictures/viz-3.png){width=50% .lightbox}
+:::
 
 **Map App**
 
-* Dynamic Map of Chicago crashes: Users can zoom-in, hover over data points, and explore different areas of the city.
-* Filter by year, crash type, and injury involved.
+![](/pictures/map-app.png){width=40% .lightbox}
 
-![](/pictures/map-app.png){width=50%}
-
-* The data folder also contains five accompanying HTML maps, one for each year 2020-2025.
+- Dynamic Map of Chicago crashes: Users can zoom in, hover over data points, and explore different areas of the city.
+- Filter: By year, crash type, and injury involved.
+- The data folder also contains five accompanying HTML maps, one for each year (2020-2025).
 
 In our analysis we examined the demographic data as independent variables and crash outcomes as dependent variables. The variables that users can choose from are: Age, Sex, Person_Type, Injury_Classification, Ejection, and Airbag_Deployed.
 
@@ -134,12 +123,12 @@ The distribution of crashes is stable from year-to-year with the exception of 20
 
 We hope these findings are just a foundation that other researchers can build upon to propose infrastructure and traffic control policies to make rush hour commuting in Chicago safer for drivers, pedestrians, cyclists, and more. The ward boundaries overlay on the maps provide an accountability measure, as alderpeople are responsible for directing infrastructure funding to roadways maintained by the Chicago Department of Transportation.
 
-One major policy implication is the need to address the high frequency of crashes during rush hour (3 - 6pm). An intervention to consider is optimizing traffic light timings. Additionally, improving infrastructure like protected bike lanes and pedestrian-friendly designs can enhance safety for vulnerable road users. A city that does this well is Pittsburgh. Pittsburgh’s use of the diagonal street crossings, known as the “Barnes Dance,” optimizes crossing pathways for pedestrians and allows drivers to benefit from longer green lights, leading to less crashes due to the optimization of the traffic flow. We hope these findings are just a foundation that Chicago city planners and other researchers can build upon to improve public safety in Chicago. 
+One major policy implication is the need to address the high frequency of crashes during rush hour (3-6pm). An intervention to consider is optimizing traffic light timings. Additionally, improving infrastructure like protected bike lanes and pedestrian-friendly designs can enhance safety for vulnerable road users. A city that does this well is Pittsburgh. Pittsburgh’s use of the diagonal street crossings, known as the “Barnes Dance,” optimizes crossing pathways for pedestrians and allows drivers to benefit from longer green lights, leading to less crashes due to the optimization of the traffic flow. 
 
 {{< pagebreak >}}
 
 ### Appendix I: Structure of our Github Folder
-![](/pictures/file-diagram.png)
+![](/pictures/file-diagram.png){width=60%}
 
 ### Appendix II: Data Cleaning and Preparation
 
